@@ -1,0 +1,16 @@
+# Data
+data/raw/*
+data/processed/*
+data/database/*
+!data/**/.gitkeep
+
+# Outputs
+outputs/results/**/*.jpg
+outputs/results/**/*.png
+outputs/results/**/*.pkl
+!outputs/**/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.env
