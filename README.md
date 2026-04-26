@@ -24,17 +24,17 @@ face-recognition-attendance/
 │   └── processed/                  # Filtered images output from Module 1
 │
 ├── modules/                        # Jupyter Notebooks (development & analysis)
-│   ├── preprocessing.py            # Module 1 — Ahmed Khaled
-│   ├── face_detection.ipynb        # Module 2 — Sama
-│   ├── embeddings.ipynb            # Module 3 — Alaa
-│   ├── matching.ipynb              # Module 4 — Mayar
-│   ├── classification.ipynb        # Module 5 — Waad
-│   ├── attendance.py               # Module 6 — Sameh
-│   └── database_manager.ipynb      # Module 7 — Ahmed Alaa
+│   ├── preprocessing.py            # Module 1
+│   ├── face_detection.ipynb        # Module 2
+│   ├── embeddings.ipynb            # Module 3
+│   ├── matching.ipynb              # Module 4
+│   ├── classification.ipynb        # Module 5
+│   ├── attendance.py               # Module 6
+│   └── database_manager.ipynb      # Module 7
 │
 ├── pipeline/                       # Production scripts (integration-ready)
-│   ├── main_pipeline.py            # Module 8 — Aliaa  ← RUN THIS
-│   ├── database_manager.py         # Module 7 (class-based, importable)
+│   ├── main_pipeline.py            # Module 8
+│   ├── database_manager.py         # Module 7
 │   └── run_pipeline.py             # Legacy single-image script
 │
 ├── outputs/
