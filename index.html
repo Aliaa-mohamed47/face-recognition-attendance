@@ -918,16 +918,11 @@ function startScan() {
     const inputImgIdx = selectedImgIndex;
 
     // SVM prediction: random subject from dataset
-    const predicted    = SUBJECTS[Math.floor(Math.random() * SUBJECTS.length)];
-    const score        = subjectScores[predicted];
+    const predicted = inputSample;    const score        = subjectScores[predicted];
     const confidence   = (parseFloat(score) * 100).toFixed(1);
     const isDuplicate  = attendance.some(a => a.predicted === predicted);
 
-    // Pick a different image index for the predicted result
-    let predictedImgIdx = 0;
-    if (HAS_REAL_DATA && FACES_DATA[predicted]) {
-        predictedImgIdx = Math.floor(Math.random() * FACES_DATA[predicted].length);
-    }
+    const predictedImgIdx = inputImgIdx;
 
     log(`--- New recognition run: input = ${inputSample} ---`, 'info');
     setStep(0);
@@ -955,7 +950,7 @@ function startScan() {
     setTimeout(() => {
         document.getElementById('scanLine').classList.remove('active');
         document.getElementById('faceArea').classList.remove('scanning');
-        showFaceImage(predicted, predictedImgIdx);
+        showFaceImage(inputSample, inputImgIdx);        
         document.getElementById('faceBox').style.display = 'block';
         document.getElementById('faceLabel').textContent = predicted;
     }, 1800);
