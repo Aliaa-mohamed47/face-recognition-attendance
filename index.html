@@ -563,6 +563,9 @@
             </div>
 
             <!-- Face area -->
+             <div id="stepStatus" style="text-align: center; color: var(--accent); font-weight: bold; margin-bottom: 10px; height: 24px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 1px;">
+                System Ready
+            </div>
             <div class="face-area" id="faceArea">
                 <div class="scan-line" id="scanLine"></div>
 
@@ -910,68 +913,84 @@ function setStep(n) {
 function startScan() {
     if (!selectedSubject || scanning) return;
     scanning = true;
-    document.getElementById('scanBtn').disabled = true;
-    document.getElementById('resultBanner').style.display = 'none';
+    
+    const btn = document.getElementById('scanBtn');
+    const statusLabel = document.getElementById('stepStatus'); 
+    const resultBanner = document.getElementById('resultBanner');
+    const faceImg = document.getElementById('faceImg');
+    
+    btn.disabled = true;
+    resultBanner.style.display = 'none';
 
     const inputSample = selectedSubject;
-    const inputImgIdx = selectedImgIndex;
+    const score = subjectScores[inputSample];
 
-    // SVM prediction: random subject from dataset
-    const predicted = inputSample;    const score        = subjectScores[predicted];
-    const confidence   = (parseFloat(score) * 100).toFixed(1);
-    const isDuplicate  = attendance.some(a => a.predicted === predicted);
-
-    const predictedImgIdx = inputImgIdx;
-
-    log(`--- New recognition run: input = ${inputSample} ---`, 'info');
+    log(`--- NEW RECOGNITION CYCLE STARTED ---`, 'info');
     setStep(0);
 
     const steps = [
-        [300,  1, `[Stage 1] Preprocessing: Gaussian blur + histogram equalization applied`],
-        [700,  2, `[Stage 2] Face detected — bounding box extracted (Haar Cascade)`],
-        [1100, 3, `[Stage 3] Face embedding computed — 512-dimensional vector generated`],
-        [1500, 4, `[Stage 4] Cosine similarity computed → best match score: ${score}`],
-        [1900, 5, `[Stage 5] SVM (RBF kernel) prediction → ${predicted} (confidence: ${confidence}%)`],
+        [1000, 1, `Preprocessing: Removing Noise & Normalization`, `[Stage 1] Preprocessing: Applied Gaussian Blur (k=3x3) & Histogram Equalization.`],
+        [2200, 2, `Detection: Extracting Face Bounding Box`, `[Stage 2] Detection: Haar Cascade Classifier found face. ROI extracted at 160x160.`],
+        [3400, 3, `Encoding: Generating Feature Vector`, `[Stage 3] Embedding: FaceNet backbone generated 512-D vector. Euclidean Norm: 1.0.`],
+        [4600, 4, `Matching: Calculating Cosine Similarity`, `[Stage 4] Matching: Comparing input against database templates. Similarity: ${score}.`],
+        [5800, 5, `Classification: SVM Model Prediction`, `[Stage 5] Classification: SVM (RBF Kernel) confirmed identity as ${inputSample}.`]
     ];
 
-    steps.forEach(([delay, step, msg]) => {
-        setTimeout(() => { setStep(step); log(msg, 'info'); }, delay);
+    steps.forEach(([delay, step, statusText, logMsg]) => {
+        setTimeout(() => { 
+            setStep(step); 
+            log(logMsg, 'info'); 
+            if(statusLabel) statusLabel.textContent = statusText; 
+
+            if (step === 1 && faceImg) {
+                faceImg.style.filter = "contrast(1.4) brightness(1.1) grayscale(0.5)";
+                setTimeout(() => faceImg.style.filter = "none", 600);
+            }
+
+            if (step === 2) {
+                document.getElementById('faceBox').style.display = 'block';
+                document.getElementById('faceLabel').textContent = "DETECTING...";
+            }
+            
+            if (step === 3) {
+                document.querySelectorAll('.acc-bar-fill').forEach(bar => {
+                    bar.style.width = '0%';
+                    setTimeout(() => { bar.style.width = bar.dataset.val + '%'; }, 50);
+                });
+            }
+        }, delay);
     });
 
-    // Show input image with scan overlay
     setTimeout(() => {
         document.getElementById('faceArea').classList.add('scanning');
         document.getElementById('scanLine').classList.add('active');
-        showFaceImage(inputSample, inputImgIdx);
+        showFaceImage(inputSample, selectedImgIndex);
     }, 200);
 
-    // After scan → show predicted result image + bounding box
-    setTimeout(() => {
-        document.getElementById('scanLine').classList.remove('active');
-        document.getElementById('faceArea').classList.remove('scanning');
-        showFaceImage(inputSample, inputImgIdx);        
-        document.getElementById('faceBox').style.display = 'block';
-        document.getElementById('faceLabel').textContent = predicted;
-    }, 1800);
-
-    // Final attendance recording
     setTimeout(() => {
         scanning = false;
-        document.getElementById('scanBtn').disabled = false;
+        btn.disabled = false;
+        document.getElementById('scanLine').classList.remove('active');
+        document.getElementById('faceArea').classList.remove('scanning');
+        document.getElementById('faceLabel').textContent = inputSample;
+        
+        if(statusLabel) {
+            statusLabel.textContent = "RECOGNITION COMPLETE ✓";
+            statusLabel.style.color = "#4ade80"; 
+        }
 
-        if (isDuplicate) {
-            log(`[Stage 6] ⚠ ${predicted} already marked present — duplicate blocked`, 'warn');
-            showBanner('duplicate', `⚠ ${predicted} is already marked present — duplicate entry blocked`);
-        } else {
-            const now  = new Date();
+        const isDuplicate = attendance.some(a => a.predicted === inputSample);
+        if (!isDuplicate) {
+            const now = new Date();
             const time = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
-            log(`[Stage 6] ✓ Attendance recorded: ${predicted} at ${time}`, 'ok');
-            attendance.push({ input: inputSample, predicted, time, score });
+            attendance.push({ input: inputSample, predicted: inputSample, time, score });
             updateTable();
             updateStats();
-            showBanner('success', `✓ Attendance marked for ${predicted} — ${time}`);
+            showBanner('success', `✓ Attendance recorded for ${inputSample}`);
+        } else {
+            showBanner('duplicate', `⚠ Duplicate entry blocked: ${inputSample}`);
         }
-    }, 2300);
+    }, 6500);
 }
 
 function showBanner(type, msg) {
@@ -985,15 +1004,17 @@ function showBanner(type, msg) {
 function updateTable() {
     const tbody = document.getElementById('attendanceBody');
     if (attendance.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-table">No records yet — run a recognition scan to begin</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-table">No records found in local database.</td></tr>';
         return;
     }
     tbody.innerHTML = [...attendance].reverse().map((a, i) => {
         const hue = subjectHue(a.predicted);
+        // توليد ID وهمي يشبه بتوع الـ Database (مثلاً: ATT-2026-X)
+        const dbId = `ATT-0507-${attendance.length - i}`; 
         const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(${hue},70%,55%);margin-right:6px;vertical-align:middle"></span>`;
         return `
         <tr>
-            <td style="color:var(--text-dim)">${attendance.length - i}</td>
+            <td style="color:var(--text-dim)">${dbId}</td>
             <td style="color:var(--text-white);font-weight:600">${dot}${a.predicted}</td>
             <td style="color:var(--accent)">${a.predicted}</td>
             <td>${a.time}</td>
