@@ -154,13 +154,4 @@ outputs/logs/attendance_2025-01-15.csv
 
 ## Team
 
-| Module | Task | Member |
-|--------|------|--------|
-| 1 | Preprocessing | Ahmed Khaled |
-| 2 | Face Detection | Sama |
-| 3 | Feature Extraction | Alaa |
-| 4 | Matching & Verification | Mayar |
-| 5 | Classification | Waad |
-| 6 | Attendance System | Sameh |
-| 7 | Database Management | Ahmed Alaa |
-| 8 | Integration & Leadership | Aliaa |
+Aliaa, Sama, Alaa, Waad, Sameh, Ahmed Khaled, Ahmed Alaa, Mayar
